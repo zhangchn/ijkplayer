@@ -32,7 +32,7 @@
 
 #include "string.h"
 
-static const char *kIJKFFRequiredFFmpegVersion = "ff3.1--ijk0.6.2--20160926--001";
+static const char *kIJKFFRequiredFFmpegVersion = "ff3.2--ijk0.7.5--20161205--001";
 
 // It means you didn't call shutdown if you found this object leaked.
 @interface IJKWeakHolder : NSObject
@@ -838,6 +838,20 @@ inline static NSString *formatedSpeed(int64_t bytes, int64_t elapsed_milli) {
     return ijkmp_get_property_float(_mediaPlayer, FFP_PROP_FLOAT_PLAYBACK_RATE, 0.0f);
 }
 
+- (void)setPlaybackVolume:(float)volume
+{
+    if (!_mediaPlayer)
+        return;
+    return ijkmp_set_playback_volume(_mediaPlayer, volume);
+}
+
+- (float)playbackVolume
+{
+    if (!_mediaPlayer)
+        return 0.0f;
+    return ijkmp_get_property_float(_mediaPlayer, FFP_PROP_FLOAT_PLAYBACK_VOLUME, 1.0f);
+}
+
 inline static void fillMetaInternal(NSMutableDictionary *meta, IjkMediaMeta *rawMeta, const char *name, NSString *defaultValue)
 {
     if (!meta || !rawMeta || !name)
@@ -884,6 +898,21 @@ inline static void fillMetaInternal(NSMutableDictionary *meta, IjkMediaMeta *raw
             NSLog(@"FFP_MSG_PREPARED:\n");
 
             _monitor.prepareDuration = (int64_t)SDL_GetTickHR() - _monitor.prepareStartTick;
+            int64_t vdec = ijkmp_get_property_int64(_mediaPlayer, FFP_PROP_INT64_VIDEO_DECODER, FFP_PROPV_DECODER_UNKNOWN);
+            switch (vdec) {
+                case FFP_PROPV_DECODER_VIDEOTOOLBOX:
+                    _monitor.vdecoder = @"VideoToolbox";
+                    break;
+                case FFP_PROPV_DECODER_AVCODEC:
+                    _monitor.vdecoder = [NSString stringWithFormat:@"avcodec %d.%d.%d",
+                                         LIBAVCODEC_VERSION_MAJOR,
+                                         LIBAVCODEC_VERSION_MINOR,
+                                         LIBAVCODEC_VERSION_MICRO];
+                    break;
+                default:
+                    _monitor.vdecoder = @"Unknown";
+                    break;
+            }
 
             IjkMediaMeta *rawMeta = ijkmp_get_meta_l(_mediaPlayer);
             if (rawMeta) {
@@ -958,12 +987,13 @@ inline static void fillMetaInternal(NSMutableDictionary *meta, IjkMediaMeta *raw
                 ijkmeta_unlock(rawMeta);
                 _monitor.mediaMeta = newMediaMeta;
             }
+            ijkmp_set_playback_rate(_mediaPlayer, [self playbackRate]);
+            ijkmp_set_playback_volume(_mediaPlayer, [self playbackVolume]);
 
             [self startHudTimer];
             _isPreparedToPlay = YES;
 
             [[NSNotificationCenter defaultCenter] postNotificationName:IJKMPMediaPlaybackIsPreparedToPlayDidChangeNotification object:self];
-
             _loadState = IJKMPMovieLoadStatePlayable | IJKMPMovieLoadStatePlaythroughOK;
 
             [[NSNotificationCenter defaultCenter]

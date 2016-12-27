@@ -202,6 +202,17 @@ void ijkmp_set_playback_rate(IjkMediaPlayer *mp, float rate)
     MPTRACE("%s()=void\n", __func__);
 }
 
+void ijkmp_set_playback_volume(IjkMediaPlayer *mp, float volume)
+{
+    assert(mp);
+
+    MPTRACE("%s(%f)\n", __func__, volume);
+    pthread_mutex_lock(&mp->mutex);
+    ffp_set_playback_volume(mp->ffplayer, volume);
+    pthread_mutex_unlock(&mp->mutex);
+    MPTRACE("%s()=void\n", __func__);
+}
+
 int ijkmp_set_stream_selected(IjkMediaPlayer *mp, int stream, int selected)
 {
     assert(mp);
@@ -753,7 +764,7 @@ int ijkmp_get_msg(IjkMediaPlayer *mp, AVMessage *msg, int block)
             pthread_mutex_unlock(&mp->mutex);
             break;
         }
-
+        msg_free_res(msg);
         if (continue_wait_next_msg)
             continue;
 
