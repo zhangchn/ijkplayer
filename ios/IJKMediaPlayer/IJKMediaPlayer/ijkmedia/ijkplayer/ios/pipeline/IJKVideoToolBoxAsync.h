@@ -1,9 +1,8 @@
-/*
- * IJKSDLGLView.h
+/*****************************************************************************
+ * IJKVideoToolBox.h
+ *****************************************************************************
  *
- * Copyright (c) 2013 Zhang Rui <bbcallen@gmail.com>
- *
- * based on https://github.com/kolyvan/kxmovie
+ * copyright (c) 2014 Zhou Quan <zhouqicy@gmail.com>
  *
  * This file is part of ijkPlayer.
  *
@@ -22,21 +21,17 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#import <UIKit/UIKit.h>
+#ifndef IJKMediaPlayer_videotoolbox_async_h
+#define IJKMediaPlayer_videotoolbox_async_h
 
-#include "ijksdl/ijksdl_vout.h"
+#include "ff_ffplay.h"
 
-@interface IJKSDLGLView : UIView
+typedef struct Ijk_VideoToolBox_Opaque Ijk_VideoToolBox_Opaque;
 
-- (id) initWithFrame:(CGRect)frame;
-- (void) display: (SDL_VoutOverlay *) overlay;
+Ijk_VideoToolBox_Opaque* videotoolbox_async_create(FFPlayer* ffp, AVCodecContext* ic);
 
-- (UIImage*) snapshot;
-- (void)setHudValue:(NSString *)value forKey:(NSString *)key;
-- (void)setShouldLockWhileBeingMovedToWindow:(BOOL)shouldLockWhiteBeingMovedToWindow __attribute__((deprecated("unused")));
+int videotoolbox_async_decode_frame(Ijk_VideoToolBox_Opaque* opaque);
 
-@property(nonatomic, readonly)        CGFloat  fps;
-@property(nonatomic)        CGFloat  scaleFactor;
-@property(nonatomic)        BOOL     shouldShowHudView;
+void videotoolbox_async_free(Ijk_VideoToolBox_Opaque* opaque);
 
-@end
+#endif
